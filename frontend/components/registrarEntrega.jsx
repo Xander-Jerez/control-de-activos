@@ -1,6 +1,7 @@
 import axios from "axios";
 import { useRouter } from "next/router";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import Select from 'react-select';
 
 const RegistrarEntrega = ()=>{
     const [tipo,setTipo]= useState("");
@@ -20,15 +21,13 @@ const RegistrarEntrega = ()=>{
     const [observacion,setObservacion]= useState("");
     const [otorga,setOtorga] = useState("");
     const [recibe,setRecibe]= useState("");
-
-
-
+    const [selectedOption, setSelectedOption] = useState(null);
+    const [listadoProductos, setListadoProductos] = useState([]); 
     const router = useRouter();
 
     const onSubmit = async (e)=>{
-
             e.preventDefault();
-            const fecha_nueva = new Date(fecha);
+            const fecha_nueva = new Date(fecha_compra);
             console.log(fecha_nueva);
             const data = {
                 "tipo":tipo,
@@ -51,24 +50,50 @@ const RegistrarEntrega = ()=>{
             }
             console.log(data);
             await axios.post(`${process.env.SERVIDOR}/entrega`,data);
-            router.push("/entrega");
+            router.push("/entrega/entrega_index");
     }
+
+    useEffect(()=>{
+        const obtenerProductos = async ()=>{
+            const response = await axios.get(`${process.env.SERVIDOR}/productos`);
+            setListadoProductos(response.data);
+        };
+        obtenerProductos();
+    },[]);
+
+    // Convertir tus productos en un formato que react-select pueda entender
+    const selectOptions = listadoProductos.map(producto => {
+        return { value: producto.nombre, label: producto.nombre }
+    });
+
+    // Manejar cambios en el selector
+    const handleChange = (selectedOption) => {
+        setSelectedOption(selectedOption);
+        setTipo(selectedOption.value);  // Actualizando el estado "tipo"
+        console.log(`Option selected:`, selectedOption);
+    };    
 
     return(
         <form  className="w-75 p-3 border rounded was-validated d-flex justify-content-center m-auto row">
             <div className="col-5"><br />
                 <label>Tipo</label>
-                <input onChange={(e)=>{setTipo(e.target.value)}} className="form-control" placeholder="Tipo de Producto" id="" cols="20" rows="5" ></input>
+                <Select
+                    value={selectedOption}
+                    onChange={handleChange}
+                    options={selectOptions}
+                    isSearchable={true} // Activar la búsqueda
+                    styles={{ menu: provided => ({ ...provided, zIndex: 9999 }) }} // Aumentar el z-index del menú
+                />
             </div>
 
             <div className="col-5"><br />
                 <label>Marca</label>
-                <input onChange={(e)=>{setMarca(e.target.value)}} className="form-control" placeholder="Marca del dispositivo" id="" cols="20" rows="5" ></input>
+                <input onChange={(e)=>{setMarca(e.target.value)}} className="form-control" placeholder="Marca del dispositivo" id="" cols="20" rows="5" required></input>
             </div>
 
             <div className="col-5"><br />
                 <label>Modelo</label>
-                <input onChange={(e)=>{setModelo(e.target.value)}} className="form-control" placeholder="Modelo" id="" cols="20" rows="5" ></input>
+                <input onChange={(e)=>{setModelo(e.target.value)}} className="form-control" placeholder="Modelo" id="" cols="20" rows="5" required></input>
             </div>
 
             <div className="col-5"><br />
@@ -102,7 +127,7 @@ const RegistrarEntrega = ()=>{
 
             <div className="col-5"><br />
                 <label>Fecha de compra</label>
-                <input required type="date" className="form-control" onChange={(e)=>setFecha_compra(e.target.value)} placeholder="" />
+                <input required type="date" className="form-control" onChange={(e)=>setFecha_compra(e.target.value)} placeholder=""/>
                 <div className="invalid-feedback">Por favor llene el campo</div>
             </div>
 
